@@ -19,15 +19,14 @@
  */
 package org.sonar.java.se;
 
-import java.util.Deque;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Set;
 
-import javax.annotation.CheckForNull;
-
+import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Function;
+import com.google.common.base.Joiner;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterables;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.sonar.java.cfg.CFG;
@@ -51,12 +50,13 @@ import org.sonar.plugins.java.api.tree.MethodTree;
 import org.sonar.plugins.java.api.tree.Tree;
 import org.sonar.plugins.java.api.tree.VariableTree;
 
-import com.google.common.annotations.VisibleForTesting;
-import com.google.common.base.Function;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Iterables;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
+import javax.annotation.CheckForNull;
+
+import java.util.Deque;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 public class ExplodedGraphWalker extends BaseTreeVisitor {
 
@@ -67,6 +67,8 @@ public class ExplodedGraphWalker extends BaseTreeVisitor {
   private static final Logger LOG = LoggerFactory.getLogger(ExplodedGraphWalker.class);
   private static final Set<String> THIS_SUPER = ImmutableSet.of("this", "super");
 
+  private static final boolean DEBUG_MODE_ACTIVATED = true;
+  private static final int MAX_EXEC_PROGRAM_POINT = 2;
   private final ConditionAlwaysTrueOrFalseChecker alwaysTrueOrFalseChecker;
   private ExplodedGraph explodedGraph;
   private Deque<ExplodedGraph.Node> workList;
@@ -238,6 +240,13 @@ public class ExplodedGraphWalker extends BaseTreeVisitor {
   private void visit(Tree tree, Tree terminator) {
     LOG.debug("visiting node " + tree.kind().name() + " at line " + ((JavaTree) tree).getLine());
     switch (tree.kind()) {
+      case METHOD_INVOCATION:
+        setSymbolicValueOnFields((MethodInvocationTree) tree);
+        ExpressionTree methodName = ((MethodInvocationTree) tree).methodSelect();
+        if (methodName.is(Tree.Kind.IDENTIFIER) && "printState".equals(((IdentifierTree) methodName).name())) {
+          debugPrint(((JavaTree) tree).getLine(), node);
+        }
+        break;
       case LABELED_STATEMENT:
       case SWITCH_STATEMENT:
       case EXPRESSION_STATEMENT:
@@ -266,12 +275,14 @@ public class ExplodedGraphWalker extends BaseTreeVisitor {
           programState = put(programState, ((IdentifierTree) assignmentExpressionTree.variable()).symbol(), value);
         }
         break;
-      case METHOD_INVOCATION:
-        setSymbolicValueOnFields((MethodInvocationTree) tree);
-        break;
       default:
     }
     checkerDispatcher.executeCheckPreStatement(tree);
+  }
+  private void debugPrint(Object... toPrint) {
+    if(DEBUG_MODE_ACTIVATED) {
+      LOG.error(Joiner.on(" - ").join(toPrint));
+    }
   }
 
   private void setSymbolicValueOnFields(MethodInvocationTree tree) {
@@ -298,7 +309,7 @@ public class ExplodedGraphWalker extends BaseTreeVisitor {
   private void resetNullValuesOnFields(MethodInvocationTree tree) {
     boolean changed = false;
     Map<Symbol, SymbolicValue> values = Maps.newHashMap(programState.values);
-    for (Entry<Symbol, SymbolicValue> entry : values.entrySet()) {
+    for (Map.Entry<Symbol, SymbolicValue> entry : values.entrySet()) {
       if (constraintManager.isNull(programState, entry.getValue())) {
         Symbol symbol = entry.getKey();
         if (isField(symbol)) {
@@ -350,6 +361,10 @@ public class ExplodedGraphWalker extends BaseTreeVisitor {
   }
 
   public void enqueue(ExplodedGraph.ProgramPoint programPoint, ProgramState programState) {
+    int nbOfExecution = explodedGraph.visitingProgramPoint(programPoint);
+    if(nbOfExecution > MAX_EXEC_PROGRAM_POINT) {
+      return;
+    }
     ExplodedGraph.Node node = explodedGraph.getNode(programPoint, programState);
     if (!node.isNew) {
       // has been enqueued earlier

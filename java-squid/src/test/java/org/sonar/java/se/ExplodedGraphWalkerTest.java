@@ -20,6 +20,9 @@
 package org.sonar.java.se;
 
 import org.junit.Test;
+import org.sonar.plugins.java.api.tree.Tree;
+
+import static org.fest.assertions.Fail.fail;
 
 public class ExplodedGraphWalkerTest {
 
@@ -38,5 +41,19 @@ public class ExplodedGraphWalkerTest {
     JavaCheckVerifier.verify("src/test/files/se/UselessConditionCheck.java", new SymbolicExecutionVisitor());
   }
 
+  @Test
+  public void test2() throws Exception {
+    JavaCheckVerifier.verify("src/test/files/se/SeEngineTestCase.java", new SymbolicExecutionVisitor() {
+      @Override
+      public void visitNode(Tree tree) {
+        try {
+          tree.accept(new ExplodedGraphWalker(context));
+        }catch (ExplodedGraphWalker.MaximumStepsReachedException exception) {
+          fail("loop execution should be limited");
+        }
+
+      }
+    });
+  }
 
 }

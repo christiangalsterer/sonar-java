@@ -24,6 +24,7 @@ import java.util.HashMap;
 import java.util.Map;
 import javax.annotation.CheckForNull;
 import org.sonar.plugins.java.api.semantic.Symbol;
+import org.sonar.plugins.java.api.tree.AssignmentExpressionTree;
 import org.sonar.plugins.java.api.tree.BinaryExpressionTree;
 import org.sonar.plugins.java.api.tree.IdentifierTree;
 import org.sonar.plugins.java.api.tree.InstanceOfTree;
@@ -36,26 +37,21 @@ import org.sonar.plugins.java.api.tree.VariableTree;
 
 public class ConstraintManager {
 
-  private final Map<Tree, SymbolicValue> map = new HashMap<>();
   /**
    * Map to handle lookup of fields.
    * */
   private final Map<Symbol, SymbolicValue> symbolMap = new HashMap<>();
+  private int counter = ProgramState.EMPTY_STATE.constraints.size();
 
   public SymbolicValue createSymbolicValue(Tree syntaxNode) {
-    SymbolicValue result = map.get(syntaxNode);
-    if (result == null && syntaxNode.is(Tree.Kind.IDENTIFIER)) {
+    SymbolicValue result = null;
+    if (syntaxNode.is(Tree.Kind.IDENTIFIER)) {
       result = symbolMap.get(((IdentifierTree) syntaxNode).symbol());
-    } else if (result == null && syntaxNode.is(Tree.Kind.VARIABLE)) {
-      result = symbolMap.get(((VariableTree) syntaxNode).symbol());
     }
     if (result == null) {
-      result = new SymbolicValue.ObjectSymbolicValue(map.size() + ProgramState.EMPTY_STATE.constraints.size());
-      map.put(syntaxNode, result);
-      if (syntaxNode.is(Tree.Kind.IDENTIFIER)) {
+      result = new SymbolicValue.ObjectSymbolicValue(counter++);
+      if(syntaxNode.is(Tree.Kind.IDENTIFIER)) {
         symbolMap.put(((IdentifierTree) syntaxNode).symbol(), result);
-      } else if (syntaxNode.is(Tree.Kind.VARIABLE)) {
-        symbolMap.put(((VariableTree) syntaxNode).symbol(), result);
       }
     }
     return result;
@@ -71,6 +67,9 @@ public class ConstraintManager {
   public SymbolicValue eval(ProgramState programState, Tree syntaxNode) {
     syntaxNode = skipTrivial(syntaxNode);
     switch (syntaxNode.kind()) {
+      case ASSIGNMENT: {
+        return eval(programState, ((AssignmentExpressionTree) syntaxNode).variable());
+      }
       case NULL_LITERAL: {
         return SymbolicValue.NULL_LITERAL;
       }
