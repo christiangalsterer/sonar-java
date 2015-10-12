@@ -56,7 +56,13 @@ public class JavaCheckVerifier extends SubscriptionVisitor {
 
   private static final String TRIGGER = "// Noncompliant";
   private ArrayListMultimap<Integer, String> expected = ArrayListMultimap.create();
+  private boolean expectNoIssues = false;
 
+  public static void verifyNoIssue(String filename, JavaFileScanner check) {
+    JavaCheckVerifier javaCheckVerifier = new JavaCheckVerifier();
+    javaCheckVerifier.expectNoIssues = true;
+    scanFile(filename, check, javaCheckVerifier);
+  }
   public static void verify(String filename, JavaFileScanner check) {
     scanFile(filename, check, new JavaCheckVerifier());
   }
@@ -119,6 +125,10 @@ public class JavaCheckVerifier extends SubscriptionVisitor {
   }
 
   private void checkIssues(SourceCode sourceCode) {
+    if (expectNoIssues) {
+      assertNoIssues(sourceCode);
+      return;
+    }
     Preconditions.checkState(sourceCode.hasCheckMessages(), "At least one issue expected");
     List<Integer> unexpectedLines = Lists.newLinkedList();
     for (CheckMessage checkMessage : sourceCode.getCheckMessages()) {
@@ -129,7 +139,7 @@ public class JavaCheckVerifier extends SubscriptionVisitor {
         List<String> list = expected.get(line);
         String expectedMessage = list.remove(list.size() - 1);
         if (expectedMessage != null) {
-          assertThat(checkMessage.getText(Locale.US)).isEqualTo(expectedMessage);
+          assertThat(checkMessage.getText(Locale.US)).as("Problem on line "+line).isEqualTo(expectedMessage);
         }
       }
     }
@@ -140,6 +150,12 @@ public class JavaCheckVerifier extends SubscriptionVisitor {
       throw Fail.fail(expectedMsg + unexpectedMsg);
     }
 
+  }
+
+  private void assertNoIssues(SourceCode sourceCode) {
+    assertThat(sourceCode.getCheckMessages()).overridingErrorMessage("No issues expected but got: " + sourceCode.getCheckMessages()).isEmpty();
+    // make sure we do not copy&paste verifyNoIssue call when we intend to call verify
+    assertThat(expected.isEmpty()).overridingErrorMessage("The file should not declare noncompliants when no issues are expected").isTrue();
   }
 
 }

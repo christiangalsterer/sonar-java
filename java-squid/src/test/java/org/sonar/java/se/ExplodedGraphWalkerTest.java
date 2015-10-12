@@ -43,7 +43,7 @@ public class ExplodedGraphWalkerTest {
 
   @Test
   public void test2() throws Exception {
-    JavaCheckVerifier.verify("src/test/files/se/SeEngineTestCase.java", new SymbolicExecutionVisitor() {
+    JavaCheckVerifier.verifyNoIssue("src/test/files/se/SeEngineTestCase.java", new SymbolicExecutionVisitor() {
       @Override
       public void visitNode(Tree tree) {
         try {
