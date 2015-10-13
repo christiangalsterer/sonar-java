@@ -24,9 +24,11 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Function;
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.HashMultiset;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.google.common.collect.Multiset;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.sonar.java.cfg.CFG;
@@ -105,6 +107,7 @@ public class ExplodedGraphWalker extends BaseTreeVisitor {
   private void execute(MethodTree tree) {
     checkerDispatcher.init();
     CFG cfg = CFG.build(tree);
+    cfg.debugTo(System.out);
     explodedGraph = new ExplodedGraph();
     constraintManager = new ConstraintManager();
     workList = new LinkedList<>();
@@ -279,6 +282,7 @@ public class ExplodedGraphWalker extends BaseTreeVisitor {
     }
     checkerDispatcher.executeCheckPreStatement(tree);
   }
+
   private void debugPrint(Object... toPrint) {
     if(DEBUG_MODE_ACTIVATED) {
       LOG.error(Joiner.on(" - ").join(toPrint));
@@ -323,7 +327,7 @@ public class ExplodedGraphWalker extends BaseTreeVisitor {
       }
     }
     if (changed) {
-      programState = new ProgramState(values, programState.constraints);
+      programState = new ProgramState(values, programState.constraints, programState.visitedPoints);
     }
   }
 
@@ -355,17 +359,20 @@ public class ExplodedGraphWalker extends BaseTreeVisitor {
     if (symbolicValue == null || !symbolicValue.equals(value)) {
       Map<Symbol, SymbolicValue> temp = Maps.newHashMap(programState.values);
       temp.put(symbol, value);
-      return new ProgramState(temp, programState.constraints);
+      return new ProgramState(temp, programState.constraints, programState.visitedPoints);
     }
     return programState;
   }
 
   public void enqueue(ExplodedGraph.ProgramPoint programPoint, ProgramState programState) {
-    int nbOfExecution = explodedGraph.visitingProgramPoint(programPoint);
+    int nbOfExecution = programState.numberOfTimeVisited(programPoint);
     if(nbOfExecution > MAX_EXEC_PROGRAM_POINT) {
+      debugPrint(programState);
       return;
     }
-    ExplodedGraph.Node node = explodedGraph.getNode(programPoint, programState);
+    Multiset<ExplodedGraph.ProgramPoint> visitedPoints = HashMultiset.create(programState.visitedPoints);
+    visitedPoints.add(programPoint);
+    ExplodedGraph.Node node = explodedGraph.getNode(programPoint, new ProgramState(programState.values, programState.constraints, visitedPoints));
     if (!node.isNew) {
       // has been enqueued earlier
       return;

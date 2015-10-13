@@ -217,7 +217,7 @@ public class ConstraintManager {
     if (data == null || !data.equals(booleanConstraint)) {
       Map<SymbolicValue, Object> temp = Maps.newHashMap(programState.constraints);
       temp.put(sv, booleanConstraint);
-      return new ProgramState(programState.values, temp);
+      return new ProgramState(programState.values, temp, programState.visitedPoints);
     }
     return programState;
   }
@@ -237,7 +237,7 @@ public class ConstraintManager {
     if (data == null || !data.equals(nullConstraint)) {
       Map<SymbolicValue, Object> temp = Maps.newHashMap(programState.constraints);
       temp.put(sv, nullConstraint);
-      return new ProgramState(programState.values, temp);
+      return new ProgramState(programState.values, temp, programState.visitedPoints);
     }
     return programState;
   }

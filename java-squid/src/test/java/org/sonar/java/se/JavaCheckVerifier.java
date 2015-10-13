@@ -69,7 +69,7 @@ public class JavaCheckVerifier extends SubscriptionVisitor {
 
   private static void scanFile(String filename, JavaFileScanner check, JavaCheckVerifier javaCheckVerifier) {
     JavaAstScanner.scanSingleFile(new File(filename),
-      new VisitorsBridge(Lists.newArrayList(check, javaCheckVerifier), Lists.newArrayList(Lists.newArrayList(new File("target/test-classes"))), null));
+      new VisitorsBridge(Lists.newArrayList(check, javaCheckVerifier), Lists.newArrayList(new File("target/test-classes")), null));
   }
 
   @Override

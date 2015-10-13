@@ -40,6 +40,10 @@ public class ExplodedGraphWalkerTest {
   public void test_useless_condition() throws Exception {
     JavaCheckVerifier.verify("src/test/files/se/UselessConditionCheck.java", new SymbolicExecutionVisitor());
   }
+  @Test
+  public void reproducer() throws Exception {
+    JavaCheckVerifier.verify("src/test/files/se/Reproducer.java", new SymbolicExecutionVisitor());
+  }
 
   @Test
   public void test2() throws Exception {

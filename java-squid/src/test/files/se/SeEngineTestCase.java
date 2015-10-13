@@ -5,7 +5,7 @@ class A {
         .f
         .g
         .h();
-    for(;true;) {
+    for(int j = 0;j<10;j++) {
       int i = 1 + 2 + 3;
       Object a = b = new Object();
       printState();

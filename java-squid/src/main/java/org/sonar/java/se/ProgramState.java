@@ -19,8 +19,11 @@
  */
 package org.sonar.java.se;
 
+import com.google.common.collect.HashMultiset;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
+import com.google.common.collect.Multiset;
+import com.google.common.collect.Multisets;
 import org.sonar.plugins.java.api.semantic.Symbol;
 
 import java.util.Map;
@@ -34,13 +37,23 @@ public class ProgramState {
         .put(SymbolicValue.NULL_LITERAL, ConstraintManager.NullConstraint.NULL)
         .put(SymbolicValue.TRUE_LITERAL, ConstraintManager.BooleanConstraint.TRUE)
         .put(SymbolicValue.FALSE_LITERAL, ConstraintManager.BooleanConstraint.FALSE)
-        .build());
+        .build(),
+      HashMultiset.<ExplodedGraph.ProgramPoint>create()
+      );
+  
+  
+  final Multiset<ExplodedGraph.ProgramPoint> visitedPoints;
     Map<Symbol, SymbolicValue> values;
     Map<SymbolicValue, Object> constraints;
 
-  public ProgramState(Map<Symbol, SymbolicValue> values, Map<SymbolicValue, Object> constraints) {
+  public ProgramState(Map<Symbol, SymbolicValue> values, Map<SymbolicValue, Object> constraints, Multiset<ExplodedGraph.ProgramPoint> visitedPoints) {
     this.values = ImmutableMap.copyOf(values);
     this.constraints = ImmutableMap.copyOf(constraints);
+    this.visitedPoints = Multisets.unmodifiableMultiset(visitedPoints);
+  }
+
+  int numberOfTimeVisited(ExplodedGraph.ProgramPoint programPoint) {
+    return visitedPoints.count(programPoint);
   }
 
   @Override
@@ -63,7 +76,7 @@ public class ProgramState {
 
   @Override
   public String toString() {
-    return "{" + values.toString() + "}  {" + constraints.toString() + "}";
+    return "{" + values.toString() + "}  {" + constraints.toString() + "}"+" { "+visitedPoints.toString()+" }";
   }
 
 }

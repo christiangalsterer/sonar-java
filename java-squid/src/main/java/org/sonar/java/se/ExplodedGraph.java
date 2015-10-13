@@ -19,9 +19,7 @@
  */
 package org.sonar.java.se;
 
-import com.google.common.collect.HashMultiset;
 import com.google.common.collect.Maps;
-import com.google.common.collect.Multiset;
 import org.sonar.java.cfg.CFG;
 
 import javax.annotation.Nullable;
@@ -31,12 +29,6 @@ import java.util.Objects;
 public class ExplodedGraph {
 
   private Map<Node, Node> nodes = Maps.newHashMap();
-  private Multiset<ProgramPoint> programPointsExecution = HashMultiset.create();
-
-  int visitingProgramPoint(ProgramPoint programPoint) {
-    programPointsExecution.add(programPoint);
-    return programPointsExecution.count(programPoint);
-  }
 
   /**
    * Returns node associated with given (programPoint,programState) pair. If no node for this pair exists, it is created.
