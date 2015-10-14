@@ -23,14 +23,24 @@ import org.sonar.api.rule.RuleKey;
 import org.sonar.api.utils.AnnotationUtils;
 import org.sonar.check.Rule;
 import org.sonar.java.se.CheckerContext;
+<<<<<<< HEAD
 import org.sonar.plugins.java.api.JavaCheck;
+=======
+import org.sonar.java.se.ProgramState;
+>>>>>>> SONARJAVA-1311 Better handling of checker dispatch
 import org.sonar.plugins.java.api.tree.Tree;
 
 public abstract class SEChecker implements JavaCheck {
 
   public void init(){}
 
-  public void checkPreStatement(CheckerContext context, Tree syntaxNode) {
+  /**
+   * @return true if cfg instruction should be executed
+   */
+  public ProgramState checkPreStatement(CheckerContext context, Tree syntaxNode) {
+    return context.getState();
+  }
+  public void checkPostStatement(CheckerContext context, Tree syntaxNode) {
     //Default transition
     context.addTransition(context.getState());
   }

@@ -40,15 +40,30 @@ public class CheckerDispatcher implements CheckerContext {
     this.checkers = checkers;
   }
 
-  public void executeCheckPreStatement(Tree syntaxNode) {
+  public boolean executeCheckPreStatement(Tree syntaxNode) {
     this.syntaxNode = syntaxNode;
-    execute();
+    ProgramState ps;
+    for (SEChecker checker : checkers) {
+      ps = checker.checkPreStatement(this, syntaxNode);
+      if(ps == null) {
+        return false;
+      }
+      explodedGraphWalker.programState = ps;
+    }
+    return true;
+
   }
 
-  private void execute() {
+
+  public void executeCheckPostStatement(Tree syntaxNode) {
+    this.syntaxNode = syntaxNode;
+    executePost();
+  }
+
+  private void executePost() {
     this.transition = false;
     if (currentCheckerIndex < checkers.size()) {
-      checkers.get(currentCheckerIndex).checkPreStatement(this, syntaxNode);
+      checkers.get(currentCheckerIndex).checkPostStatement(this, syntaxNode);
     } else {
       explodedGraphWalker.enqueue(
           new ExplodedGraph.ProgramPoint(explodedGraphWalker.programPosition.block, explodedGraphWalker.programPosition.i + 1),
@@ -87,7 +102,7 @@ public class CheckerDispatcher implements CheckerContext {
     ProgramState oldState = explodedGraphWalker.programState;
     explodedGraphWalker.programState = state;
     currentCheckerIndex++;
-    execute();
+    executePost();
     currentCheckerIndex--;
     explodedGraphWalker.programState = oldState;
     this.transition = true;

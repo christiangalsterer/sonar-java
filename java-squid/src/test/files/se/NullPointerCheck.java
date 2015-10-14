@@ -250,12 +250,12 @@ class NullPointerTest {
     }
   }
 
-  public void testLogicalAnd(String str) {
+  public void testLogicalAnd(String str, Object object) {
     if (object != null && object.hashCode() == 0) ; // Compliant
     if (object != null && object.hashCode() != 0 && object.hashCode() != 0) ; // Compliant
     if (object == null && object.hashCode() == 0) ; // Noncompliant {{NullPointerException might be thrown as 'object' is nullable here}}
   }
-  public void testLogicalAnd2(String str) {
+  public void testLogicalAnd2(String str, Object object) {
     if (object == null && object.hashCode() == 0 && object.hashCode() == 0); // Noncompliant {{NullPointerException might be thrown as 'object' is nullable here}}
   }
   public void testLogicalAnd3(String str) {
@@ -263,12 +263,12 @@ class NullPointerTest {
     boolean b1 = str == null && str.length() == 0; // Noncompliant {{NullPointerException might be thrown as 'str' is nullable here}}
   }
 
-  public void testLogicalOr(String str) {
+  public void testLogicalOr(String str, Object object) {
     if (object == null || object.hashCode() == 0) ; // Compliant
     if (object == null || object.hashCode() != 0 || object.hashCode() != 0) ; // Compliant
     if (object != null || object.hashCode() == 0) ; // Noncompliant {{NullPointerException might be thrown as 'object' is nullable here}}
   }
-  public void testLogicalOr2(String str) {
+  public void testLogicalOr2(String str, Object object) {
     if (object != null || object.hashCode() == 0 || object.hashCode() == 0) ; // Noncompliant {{NullPointerException might be thrown as 'object' is nullable here}}
     boolean b1 = str == null || str.length() == 0; // Compliant
   }
@@ -546,7 +546,6 @@ class NullPointerTest {
     if (0 == 0) { } // Coverage
     a[0] = null; // Coverage
     if (null == coverageMethod()) { } // Coverage
-    if (a == a) { } // Coverage
     if (a == null) { } // Coverage
     if (a != null) { } // Coverage
     undefined.field; // Coverage

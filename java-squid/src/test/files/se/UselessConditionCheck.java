@@ -822,16 +822,16 @@ public static class Class extends SuperClass {
   public void conditional_operators(boolean unknown) {
     boolean condition;
     condition = false && unknown; // Noncompliant {{Change this condition so that it does not always evaluate to "false"}}
-    if (condition) { // False negative (evaluate expression) Noncompliant {{Change this condition so that it does not always evaluate to "false"}}
+    if (condition) { // Noncompliant {{Change this condition so that it does not always evaluate to "false"}}
     }
     condition = unknown && false;
-    if (condition) { // False negative (evaluate expression) Noncompliant {{Change this condition so that it does not always evaluate to "false"}}
+    if (condition) { // Noncompliant {{Change this condition so that it does not always evaluate to "false"}}
     }
     condition = true || unknown; // Noncompliant {{Change this condition so that it does not always evaluate to "true"}}
-    if (condition) { // False negative (evaluate expression) Noncompliant {{Change this condition so that it does not always evaluate to "true"}}
+    if (condition) { // Noncompliant {{Change this condition so that it does not always evaluate to "true"}}
     }
     condition = unknown || true;
-    if (condition) { // False negative (evaluate expression) Noncompliant {{Change this condition so that it does not always evaluate to "true"}}
+    if (condition) { // Noncompliant {{Change this condition so that it does not always evaluate to "true"}}
     }
   }
 
@@ -884,7 +884,7 @@ public static class Class extends SuperClass {
   }
 
   public void test_condition_assignment(boolean local1, boolean local2) {
-    if (local1 = false) { // False negative : evaluate assignement expression : Noncompliant {{Change this condition so that it does not always evaluate to "false"}}
+    if (local1 = false) { // Noncompliant {{Change this condition so that it does not always evaluate to "false"}}
       //false positive: it should not be reached
       if (false) { // Noncompliant
       }
@@ -892,7 +892,7 @@ public static class Class extends SuperClass {
       if (local1) { // Noncompliant {{Change this condition so that it does not always evaluate to "false"}}
       }
     }
-    if (local2 = true) { // False negative : evaluate assignement expression : Noncompliant {{Change this condition so that it does not always evaluate to "true"}}
+    if (local2 = true) { // Noncompliant {{Change this condition so that it does not always evaluate to "true"}}
       if (local2) { // Noncompliant {{Change this condition so that it does not always evaluate to "true"}}
       }
     } else {
@@ -1013,7 +1013,7 @@ public static class Class extends SuperClass {
     if (result) { // Compliant
     }
     result = true ? false : condition; // Noncompliant
-    if (result) { // false negative : evaluate conditional Noncompliant {{Change this condition so that it does not always evaluate to "false"}}
+    if (result) { // Noncompliant {{Change this condition so that it does not always evaluate to "false"}}
     }
   }
   public void ternary2(boolean condition) {
@@ -1026,18 +1026,18 @@ public static class Class extends SuperClass {
 
     if (condition ? true : false) { // Compliant
     }
-    if (condition ? false : false) { //false negative : evaluate conditional  Noncompliant {{Change this condition so that it does not always evaluate to "false"}}
+    if (condition ? false : false) { // Noncompliant {{Change this condition so that it does not always evaluate to "false"}}
     }
   }
   public void ternary3(boolean condition) {
     if (true ? condition : false) { // Noncompliant
     }
-    if (true ? false : condition) { // Noncompliant {{Change this condition so that it does not always evaluate to "true"}}
+    if (true ? false : condition) { // Noncompliant 2
     }
 
     if (false ? true : condition) { // Noncompliant
     }
-    if (false ? condition : true) { // Noncompliant {{Change this condition so that it does not always evaluate to "false"}}
+    if (false ? condition : true) { // Noncompliant 2
     }
   }
   

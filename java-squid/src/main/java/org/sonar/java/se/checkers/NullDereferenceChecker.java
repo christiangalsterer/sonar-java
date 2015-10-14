@@ -43,25 +43,28 @@ import org.sonar.squidbridge.annotations.SqaleSubCharacteristic;
 @SqaleConstantRemediation("10min")
 public class NullDereferenceChecker extends SEChecker {
 
+<<<<<<< HEAD
+=======
+  private static final String RULE_KEY = "squid:S2259";
+
+
+>>>>>>> SONARJAVA-1311 Better handling of checker dispatch
   @Override
-  public void checkPreStatement(CheckerContext context, Tree syntaxNode) {
-    ProgramState programState = setNullConstraint(context, syntaxNode);
-    SymbolicValue val = null;
-    ExpressionTree expressionTree = null;
-    String name = "";
-    if (syntaxNode.is(Tree.Kind.MEMBER_SELECT)) {
-      expressionTree = ((MemberSelectExpressionTree) syntaxNode).expression();
-    } else if (syntaxNode.is(Tree.Kind.SWITCH_STATEMENT)) {
-      expressionTree = ((SwitchStatementTree) syntaxNode).expression();
+  public ProgramState checkPreStatement(CheckerContext context, Tree syntaxNode) {
+    SymbolicValue currentVal = context.getState().peekValue();
+    if(currentVal == null) {
+      //stack is empty, nothing to do.
+      return context.getState();
     }
-    if(expressionTree != null) {
-      val = context.getVal(expressionTree);
-      if(expressionTree.is(Tree.Kind.IDENTIFIER)) {
-        name = ((IdentifierTree) expressionTree).name();
-      } else if(expressionTree.is(Tree.Kind.METHOD_INVOCATION)) {
-        name = ((MethodInvocationTree) expressionTree).symbol().name();
+    if(syntaxNode.is(Tree.Kind.MEMBER_SELECT)) {
+      if(context.isNull(currentVal)) {
+        context.addIssue(syntaxNode, RULE_KEY, "NullPointerException might be thrown as '" + getName(syntaxNode) + "' is nullable here");
+        return null;
       }
+      //we dereferenced the symbolic value so we can assume it is not null
+      return context.setConstraint(currentVal, ConstraintManager.NullConstraint.NOT_NULL);
     }
+<<<<<<< HEAD
     if (val != null) {
       if (context.isNull(val)) {
         context.addIssue(syntaxNode, this, "NullPointerException might be thrown as '" + name + "' is nullable here");
@@ -71,15 +74,27 @@ public class NullDereferenceChecker extends SEChecker {
         //we dereferenced the symbolic value so we can assume it is not null
         programState = context.setConstraint(val, ConstraintManager.NullConstraint.NOT_NULL);
       }
+=======
+    return context.getState();
+  }
+
+  @Override
+  public void checkPostStatement(CheckerContext context, Tree syntaxNode) {
+    if (context.isNull(context.getState().peekValue()) && syntaxNode.is(Tree.Kind.SWITCH_STATEMENT)) {
+      context.addIssue(syntaxNode, RULE_KEY, "NullPointerException might be thrown as '" + getName(syntaxNode) + "' is nullable here");
+      context.createSink();
+      return;
+>>>>>>> SONARJAVA-1311 Better handling of checker dispatch
     }
-    context.addTransition(programState);
+    context.addTransition(setNullConstraint(context, syntaxNode));
   }
 
   private ProgramState setNullConstraint(CheckerContext context, Tree syntaxNode) {
-    SymbolicValue val = context.getVal(syntaxNode);
+    SymbolicValue val = context.getState().peekValue();
     switch (syntaxNode.kind()) {
       case NULL_LITERAL:
-        return context.setConstraint(val, ConstraintManager.NullConstraint.NULL);
+        assert val.equals(SymbolicValue.NULL_LITERAL);
+        return context.getState();
       case METHOD_INVOCATION:
         ProgramState ps = context.getState();
         if (((MethodInvocationTree) syntaxNode).symbol().metadata().isAnnotatedWith("javax.annotation.CheckForNull")) {
@@ -88,5 +103,23 @@ public class NullDereferenceChecker extends SEChecker {
         return ps;
     }
     return context.getState();
+  }
+
+  private static String getName(Tree syntaxNode) {
+    String name = "";
+    ExpressionTree expressionTree = null;
+    if (syntaxNode.is(Tree.Kind.MEMBER_SELECT)) {
+      expressionTree = ((MemberSelectExpressionTree) syntaxNode).expression();
+    } else if (syntaxNode.is(Tree.Kind.SWITCH_STATEMENT)) {
+      expressionTree = ((SwitchStatementTree) syntaxNode).expression();
+    }
+    if(expressionTree != null) {
+      if(expressionTree.is(Tree.Kind.IDENTIFIER)) {
+        name = ((IdentifierTree) expressionTree).name();
+      } else if(expressionTree.is(Tree.Kind.METHOD_INVOCATION)) {
+        name = ((MethodInvocationTree) expressionTree).symbol().name();
+      }
+    }
+    return name;
   }
 }

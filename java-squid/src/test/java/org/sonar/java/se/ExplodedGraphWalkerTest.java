@@ -24,7 +24,7 @@ import org.sonar.plugins.java.api.tree.Tree;
 
 import static org.fest.assertions.Fail.fail;
 
-public class ExplodedGraphWalkerTest {
+  public class ExplodedGraphWalkerTest {
 
   @Test
   public void test() throws Exception {

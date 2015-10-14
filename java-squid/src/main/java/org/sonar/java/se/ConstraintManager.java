@@ -19,15 +19,9 @@
  */
 package org.sonar.java.se;
 
-import com.google.common.collect.Maps;
-import java.util.HashMap;
-import java.util.Map;
-import javax.annotation.CheckForNull;
 import org.sonar.plugins.java.api.semantic.Symbol;
 import org.sonar.plugins.java.api.tree.AssignmentExpressionTree;
-import org.sonar.plugins.java.api.tree.BinaryExpressionTree;
 import org.sonar.plugins.java.api.tree.IdentifierTree;
-import org.sonar.plugins.java.api.tree.InstanceOfTree;
 import org.sonar.plugins.java.api.tree.LiteralTree;
 import org.sonar.plugins.java.api.tree.ParenthesizedTree;
 import org.sonar.plugins.java.api.tree.Tree;
@@ -35,33 +29,36 @@ import org.sonar.plugins.java.api.tree.TypeCastTree;
 import org.sonar.plugins.java.api.tree.UnaryExpressionTree;
 import org.sonar.plugins.java.api.tree.VariableTree;
 
+import javax.annotation.CheckForNull;
+
+import java.util.List;
+
 public class ConstraintManager {
 
-  /**
-   * Map to handle lookup of fields.
-   * */
-  private final Map<Symbol, SymbolicValue> symbolMap = new HashMap<>();
+//  private final Map<Symbol, SymbolicValue> symbolMap = new HashMap<>();
   private int counter = ProgramState.EMPTY_STATE.constraints.size();
 
   public SymbolicValue createSymbolicValue(Tree syntaxNode) {
-    SymbolicValue result = null;
-    if (syntaxNode.is(Tree.Kind.IDENTIFIER)) {
-      result = symbolMap.get(((IdentifierTree) syntaxNode).symbol());
+//    SymbolicValue result = null;
+//    if (syntaxNode.is(Tree.Kind.IDENTIFIER)) {
+//      result = symbolMap.get(((IdentifierTree) syntaxNode).symbol());
+//    }
+//    if (result == null) {
+//      result = new SymbolicValue.ObjectSymbolicValue(counter++);
+//      if(syntaxNode.is(Tree.Kind.IDENTIFIER)) {
+//        symbolMap.put(((IdentifierTree) syntaxNode).symbol(), result);
+//      }
+//    }
+    if(syntaxNode.is(Tree.Kind.EQUAL_TO)) {
+      return new SymbolicValue.EqualToSymbolicValue(counter++);
+    } else if(syntaxNode.is(Tree.Kind.NOT_EQUAL_TO)) {
+      return new SymbolicValue.NotEqualToSymbolicValue(counter++);
     }
-    if (result == null) {
-      result = new SymbolicValue.ObjectSymbolicValue(counter++);
-      if(syntaxNode.is(Tree.Kind.IDENTIFIER)) {
-        symbolMap.put(((IdentifierTree) syntaxNode).symbol(), result);
-      }
-    }
-    return result;
+    return new SymbolicValue.ObjectSymbolicValue(counter++);
   }
 
   public SymbolicValue supersedeSymbolicValue(VariableTree variable) {
-    SymbolicValue result = new SymbolicValue.ObjectSymbolicValue(map.size() + ProgramState.EMPTY_STATE.constraints.size());
-    map.put(variable, result);
-    symbolMap.put(variable.symbol(), result);
-    return result;
+    return createSymbolicValue(variable);
   }
 
   public SymbolicValue eval(ProgramState programState, Tree syntaxNode) {
@@ -137,8 +134,13 @@ public class ConstraintManager {
   }
 
   public Pair<ProgramState, ProgramState> assumeDual(ProgramState programState, Tree condition) {
-    // FIXME condition value should be evaluated to determine if it is worth exploring this branch. This should probably be done in a
-    // dedicated checker.
+    Pair<ProgramState, List<SymbolicValue>> unstack = ProgramState.unstack(programState, 1);
+    SymbolicValue sv = unstack.b.get(0);
+    return new Pair<>(setConstraint(unstack.a, sv, BooleanConstraint.FALSE), setConstraint(unstack.a, sv, BooleanConstraint.TRUE));
+/*
+
+    //FIXME condition value should be evaluated to determine if it is worth exploring this branch. This should probably be done in a dedicated checker.
+>>>>>>> SONARJAVA-1311 Better handling of checker dispatch
     condition = skipTrivial(condition);
     switch (condition.kind()) {
       case INSTANCE_OF: {
@@ -200,6 +202,7 @@ public class ConstraintManager {
         return new Pair<>(setConstraint(programState, eval, BooleanConstraint.FALSE), setConstraint(programState, eval, BooleanConstraint.TRUE));
     }
     return new Pair<>(programState, programState);
+    */
   }
 
   @CheckForNull
@@ -215,12 +218,41 @@ public class ConstraintManager {
       }
     }
     if (data == null || !data.equals(booleanConstraint)) {
-      Map<SymbolicValue, Object> temp = Maps.newHashMap(programState.constraints);
-      temp.put(sv, booleanConstraint);
-      return new ProgramState(programState.values, temp, programState.visitedPoints);
+      return sv.setConstraint(programState, booleanConstraint);
+//      if(sv instanceof SymbolicValue.EqualToSymbolicValue) {
+//        SymbolicValue.EqualToSymbolicValue equalToSymbolicValue = (SymbolicValue.EqualToSymbolicValue) sv;
+//        if(equalToSymbolicValue.leftOp.equals(equalToSymbolicValue.rightOp)) {
+//          return BooleanConstraint.TRUE.equals(booleanConstraint) ? programState : null;
+//        }
+//        programState = copyConstraint(equalToSymbolicValue.leftOp, equalToSymbolicValue.rightOp, programState, booleanConstraint);
+//        if(programState == null) {
+//          return null;
+//        }
+//        programState = copyConstraint(equalToSymbolicValue.rightOp, equalToSymbolicValue.leftOp, programState, booleanConstraint);
+//      } else {
+//        // store constraint only if symbolic value can be reached by a symbol.
+//        if(programState.values.containsValue(sv)) {
+//          Map<SymbolicValue, Object> temp = Maps.newHashMap(programState.constraints);
+//          temp.put(sv, booleanConstraint);
+//          return new ProgramState(programState.values, temp, programState.visitedPoints, programState.stack);
+//        }
+//      }
     }
     return programState;
   }
+
+//  private static ProgramState copyConstraint(SymbolicValue from, SymbolicValue to, ProgramState programState, BooleanConstraint booleanConstraint) {
+//    ProgramState result = programState;
+//    Object constraintLeft = programState.constraints.get(from);
+//    if(constraintLeft instanceof BooleanConstraint) {
+//      BooleanConstraint boolConstraint = (BooleanConstraint) constraintLeft;
+//      result = setConstraint(programState, to, BooleanConstraint.TRUE.equals(booleanConstraint) ? boolConstraint : boolConstraint.inverse());
+//    } else if(constraintLeft instanceof NullConstraint) {
+//      NullConstraint nullConstraint = (NullConstraint) constraintLeft;
+//      result = setConstraint(programState, to, BooleanConstraint.TRUE.equals(booleanConstraint) ? nullConstraint : nullConstraint.inverse());
+//    }
+//    return result;
+//  }
 
   @CheckForNull
   static ProgramState setConstraint(ProgramState programState, SymbolicValue sv, NullConstraint nullConstraint) {
@@ -235,20 +267,31 @@ public class ConstraintManager {
       }
     }
     if (data == null || !data.equals(nullConstraint)) {
-      Map<SymbolicValue, Object> temp = Maps.newHashMap(programState.constraints);
-      temp.put(sv, nullConstraint);
-      return new ProgramState(programState.values, temp, programState.visitedPoints);
+     return sv.setConstraint(programState, nullConstraint);
     }
     return programState;
   }
 
   public enum NullConstraint {
     NULL,
-    NOT_NULL,
+    NOT_NULL;
+    NullConstraint inverse() {
+      if(NULL == this) {
+        return NOT_NULL;
+      }
+      return NULL;
+    }
+
   }
 
   public enum BooleanConstraint {
     TRUE,
-    FALSE,
+    FALSE;
+    BooleanConstraint inverse() {
+      if(TRUE == this) {
+        return FALSE;
+      }
+      return TRUE;
+    }
   }
 }

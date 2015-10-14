@@ -38,6 +38,7 @@ import org.sonar.squidbridge.api.SourceCode;
 
 import java.io.File;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
 
@@ -131,7 +132,16 @@ public class JavaCheckVerifier extends SubscriptionVisitor {
     }
     Preconditions.checkState(sourceCode.hasCheckMessages(), "At least one issue expected");
     List<Integer> unexpectedLines = Lists.newLinkedList();
-    for (CheckMessage checkMessage : sourceCode.getCheckMessages()) {
+
+    List<CheckMessage> checkMessages = Lists.newArrayList(sourceCode.getCheckMessages());
+    Collections.sort(checkMessages, new Comparator<CheckMessage>() {
+      @Override
+      public int compare(CheckMessage checkMessage, CheckMessage t1) {
+        return checkMessage.getLine()-t1.getLine();
+      }
+    });
+
+    for (CheckMessage checkMessage : checkMessages) {
       int line = checkMessage.getLine();
       if (!expected.containsKey(line)) {
         unexpectedLines.add(line);
