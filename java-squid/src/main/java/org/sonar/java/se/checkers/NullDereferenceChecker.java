@@ -43,38 +43,23 @@ import org.sonar.squidbridge.annotations.SqaleSubCharacteristic;
 @SqaleConstantRemediation("10min")
 public class NullDereferenceChecker extends SEChecker {
 
-<<<<<<< HEAD
-=======
   private static final String RULE_KEY = "squid:S2259";
 
-
->>>>>>> SONARJAVA-1311 Better handling of checker dispatch
   @Override
   public ProgramState checkPreStatement(CheckerContext context, Tree syntaxNode) {
     SymbolicValue currentVal = context.getState().peekValue();
-    if(currentVal == null) {
-      //stack is empty, nothing to do.
+    if (currentVal == null) {
+      // stack is empty, nothing to do.
       return context.getState();
     }
-    if(syntaxNode.is(Tree.Kind.MEMBER_SELECT)) {
-      if(context.isNull(currentVal)) {
+    if (syntaxNode.is(Tree.Kind.MEMBER_SELECT)) {
+      if (context.isNull(currentVal)) {
         context.addIssue(syntaxNode, RULE_KEY, "NullPointerException might be thrown as '" + getName(syntaxNode) + "' is nullable here");
         return null;
       }
-      //we dereferenced the symbolic value so we can assume it is not null
-      return context.setConstraint(currentVal, ConstraintManager.NullConstraint.NOT_NULL);
+      // we dereferenced the symbolic value so we can assume it is not null
+      return currentVal.setConstraint(context.getState(), ConstraintManager.NullConstraint.NOT_NULL);
     }
-<<<<<<< HEAD
-    if (val != null) {
-      if (context.isNull(val)) {
-        context.addIssue(syntaxNode, this, "NullPointerException might be thrown as '" + name + "' is nullable here");
-        context.createSink();
-        return;
-      } else {
-        //we dereferenced the symbolic value so we can assume it is not null
-        programState = context.setConstraint(val, ConstraintManager.NullConstraint.NOT_NULL);
-      }
-=======
     return context.getState();
   }
 
@@ -84,7 +69,6 @@ public class NullDereferenceChecker extends SEChecker {
       context.addIssue(syntaxNode, RULE_KEY, "NullPointerException might be thrown as '" + getName(syntaxNode) + "' is nullable here");
       context.createSink();
       return;
->>>>>>> SONARJAVA-1311 Better handling of checker dispatch
     }
     context.addTransition(setNullConstraint(context, syntaxNode));
   }
@@ -98,7 +82,7 @@ public class NullDereferenceChecker extends SEChecker {
       case METHOD_INVOCATION:
         ProgramState ps = context.getState();
         if (((MethodInvocationTree) syntaxNode).symbol().metadata().isAnnotatedWith("javax.annotation.CheckForNull")) {
-          ps = context.setConstraint(val, ConstraintManager.NullConstraint.NULL);
+          ps = val.setConstraint(context.getState(), ConstraintManager.NullConstraint.NULL);
         }
         return ps;
     }
@@ -113,10 +97,10 @@ public class NullDereferenceChecker extends SEChecker {
     } else if (syntaxNode.is(Tree.Kind.SWITCH_STATEMENT)) {
       expressionTree = ((SwitchStatementTree) syntaxNode).expression();
     }
-    if(expressionTree != null) {
-      if(expressionTree.is(Tree.Kind.IDENTIFIER)) {
+    if (expressionTree != null) {
+      if (expressionTree.is(Tree.Kind.IDENTIFIER)) {
         name = ((IdentifierTree) expressionTree).name();
-      } else if(expressionTree.is(Tree.Kind.METHOD_INVOCATION)) {
+      } else if (expressionTree.is(Tree.Kind.METHOD_INVOCATION)) {
         name = ((MethodInvocationTree) expressionTree).symbol().name();
       }
     }

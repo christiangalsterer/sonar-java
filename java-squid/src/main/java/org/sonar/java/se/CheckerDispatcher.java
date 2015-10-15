@@ -45,7 +45,7 @@ public class CheckerDispatcher implements CheckerContext {
     ProgramState ps;
     for (SEChecker checker : checkers) {
       ps = checker.checkPreStatement(this, syntaxNode);
-      if(ps == null) {
+      if (ps == null) {
         return false;
       }
       explodedGraphWalker.programState = ps;
@@ -53,7 +53,6 @@ public class CheckerDispatcher implements CheckerContext {
     return true;
 
   }
-
 
   public void executeCheckPostStatement(Tree syntaxNode) {
     this.syntaxNode = syntaxNode;
@@ -66,9 +65,8 @@ public class CheckerDispatcher implements CheckerContext {
       checkers.get(currentCheckerIndex).checkPostStatement(this, syntaxNode);
     } else {
       explodedGraphWalker.enqueue(
-          new ExplodedGraph.ProgramPoint(explodedGraphWalker.programPosition.block, explodedGraphWalker.programPosition.i + 1),
-          explodedGraphWalker.programState
-      );
+        new ExplodedGraph.ProgramPoint(explodedGraphWalker.programPosition.block, explodedGraphWalker.programPosition.i + 1),
+        explodedGraphWalker.programState);
       return;
     }
     if (!transition) {
@@ -82,11 +80,6 @@ public class CheckerDispatcher implements CheckerContext {
   }
 
   @Override
-  public ProgramState setConstraint(SymbolicValue val, ConstraintManager.NullConstraint nl) {
-    return ConstraintManager.setConstraint(getState(), val, nl);
-  }
-
-  @Override
   public boolean isNull(SymbolicValue val) {
     return explodedGraphWalker.constraintManager.isNull(getState(), val);
   }
@@ -95,7 +88,6 @@ public class CheckerDispatcher implements CheckerContext {
   public void addIssue(Tree tree, SEChecker check, String message) {
     context.addIssue(tree, check, message);
   }
-
 
   @Override
   public void addTransition(ProgramState state) {
@@ -112,12 +104,6 @@ public class CheckerDispatcher implements CheckerContext {
   public Object createSink() {
     transition = true;
     return new Object();
-  }
-
-
-  @Override
-  public SymbolicValue getVal(Tree expression) {
-    return explodedGraphWalker.getVal(expression);
   }
 
   public void executeCheckEndOfExecution(MethodTree tree) {

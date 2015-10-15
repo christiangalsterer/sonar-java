@@ -33,6 +33,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.sonar.java.cfg.CFG;
 import org.sonar.java.model.JavaTree;
+import org.sonar.java.se.ConstraintManager.NullConstraint;
 import org.sonar.java.se.checkers.ConditionAlwaysTrueOrFalseChecker;
 import org.sonar.java.se.checkers.NullDereferenceChecker;
 import org.sonar.plugins.java.api.JavaFileScannerContext;
@@ -129,8 +130,8 @@ public class ExplodedGraphWalker extends BaseTreeVisitor {
           @Override
           public List<ProgramState> apply(ProgramState input) {
             return Lists.newArrayList(
-              ConstraintManager.setConstraint(input, sv, ConstraintManager.NullConstraint.NULL),
-              ConstraintManager.setConstraint(input, sv, ConstraintManager.NullConstraint.NOT_NULL));
+              sv.setConstraint(input, NullConstraint.NULL),
+              sv.setConstraint(input, NullConstraint.NOT_NULL));
           }
         }));
 
@@ -211,7 +212,7 @@ public class ExplodedGraphWalker extends BaseTreeVisitor {
   }
 
   private void handleBranch(CFG.Block programPosition, Tree condition, boolean checkPath) {
-    Pair<ProgramState, ProgramState> pair = constraintManager.assumeDual(programState, condition);
+    Pair<ProgramState, ProgramState> pair = constraintManager.assumeDual(programState);
     if (pair.a != null) {
       // enqueue false-branch, if feasible
       ProgramState ps = ProgramState.stackValue(pair.a, SymbolicValue.FALSE_LITERAL);
@@ -233,8 +234,8 @@ public class ExplodedGraphWalker extends BaseTreeVisitor {
 
   private void visit(Tree tree, Tree terminator) {
     LOG.debug("visiting node " + tree.kind().name() + " at line " + ((JavaTree) tree).getLine());
-    if(!checkerDispatcher.executeCheckPreStatement(tree)) {
-      //Some of the check pre statement sink the execution on this node.
+    if (!checkerDispatcher.executeCheckPreStatement(tree)) {
+      // Some of the check pre statement sink the execution on this node.
       return;
     }
     switch (tree.kind()) {
@@ -286,7 +287,7 @@ public class ExplodedGraphWalker extends BaseTreeVisitor {
         programState = ProgramState.unstack(programState, newClassTree.arguments().size()).a;
         SymbolicValue svNewClass = constraintManager.createSymbolicValue(newClassTree);
         programState = ProgramState.stackValue(programState, svNewClass);
-        programState = ConstraintManager.setConstraint(programState, svNewClass, ConstraintManager.NullConstraint.NOT_NULL);
+        programState = svNewClass.setConstraint(programState, NullConstraint.NOT_NULL);
         break;
       case MULTIPLY:
       case DIVIDE:
@@ -305,7 +306,7 @@ public class ExplodedGraphWalker extends BaseTreeVisitor {
       case LESS_THAN_OR_EQUAL_TO:
       case EQUAL_TO:
       case NOT_EQUAL_TO:
-        //Consume two and produce one SV.
+        // Consume two and produce one SV.
         Pair<ProgramState, List<SymbolicValue>> unstackBinary = ProgramState.unstack(programState, 2);
         programState = unstackBinary.a;
         SymbolicValue symbolicValue = constraintManager.createSymbolicValue(tree);
@@ -320,7 +321,8 @@ public class ExplodedGraphWalker extends BaseTreeVisitor {
       case UNARY_PLUS:
       case BITWISE_COMPLEMENT:
       case LOGICAL_COMPLEMENT:
-        //consume one and produce one
+      case INSTANCE_OF:
+        // consume one and produce one
         Pair<ProgramState, List<SymbolicValue>> unstackUnary = ProgramState.unstack(programState, 1);
         programState = unstackUnary.a;
         SymbolicValue unarySymbolicValue = constraintManager.createSymbolicValue(tree);
@@ -330,16 +332,20 @@ public class ExplodedGraphWalker extends BaseTreeVisitor {
       case IDENTIFIER:
         Symbol symbol = ((IdentifierTree) tree).symbol();
         SymbolicValue value = programState.values.get(symbol);
-        if(value == null) {
+        if (value == null) {
           value = constraintManager.createSymbolicValue(tree);
           programState = ProgramState.put(programState, symbol, value);
         }
-        programState  = ProgramState.stackValue(programState, value);
+        programState = ProgramState.stackValue(programState, value);
         break;
       case MEMBER_SELECT:
-        Pair<ProgramState, List<SymbolicValue>> unstackMSE = ProgramState.unstack(programState, 1);
+        MemberSelectExpressionTree mse = (MemberSelectExpressionTree) tree;
+        if (!"class".equals(mse.identifier().name())) {
+          Pair<ProgramState, List<SymbolicValue>> unstackMSE = ProgramState.unstack(programState, 1);
+          programState = unstackMSE.a;
+        }
         SymbolicValue MSEValue = constraintManager.createSymbolicValue(tree);
-        programState = ProgramState.stackValue(unstackMSE.a, MSEValue);
+        programState = ProgramState.stackValue(programState, MSEValue);
         break;
       case INT_LITERAL:
       case LONG_LITERAL:
