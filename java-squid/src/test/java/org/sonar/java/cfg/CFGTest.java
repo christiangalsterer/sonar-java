@@ -21,11 +21,6 @@ package org.sonar.java.cfg;
 
 import com.google.common.base.Charsets;
 import com.sonar.sslr.api.typed.ActionParser;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Set;
 import org.junit.Test;
 import org.sonar.java.ast.parser.JavaParser;
 import org.sonar.java.cfg.CFG.Block;
@@ -39,6 +34,12 @@ import org.sonar.plugins.java.api.tree.MethodTree;
 import org.sonar.plugins.java.api.tree.Tree;
 import org.sonar.plugins.java.api.tree.Tree.Kind;
 import org.sonar.plugins.java.api.tree.VariableTree;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Set;
 
 import static org.fest.assertions.Assertions.assertThat;
 
@@ -200,6 +201,7 @@ public class CFGTest {
       name = null;
       switch (kind) {
         case METHOD_INVOCATION:
+        case METHOD_REFERENCE:
         case MEMBER_SELECT:
         case NULL_LITERAL:
         case EQUAL_TO:
@@ -902,6 +904,7 @@ public class CFGTest {
         element(Tree.Kind.INSTANCE_OF)
         ).terminator(Tree.Kind.IF_STATEMENT).successors(0, 1),
       block(
+        element(Kind.METHOD_REFERENCE),
         element(Tree.Kind.LAMBDA_EXPRESSION),
         element(Tree.Kind.IDENTIFIER, "foo"),
         element(Tree.Kind.METHOD_INVOCATION),
@@ -949,4 +952,15 @@ public class CFGTest {
     cfgChecker.check(cfg);
   }
 
+  @Test
+  public void method_reference() throws Exception {
+    final CFG cfg = buildCFG("void fun() { foo(Object::toString); }");
+    final CFGChecker cfgChecker = checker(
+        block(
+            element(Kind.METHOD_REFERENCE),
+            element(Kind.IDENTIFIER, "foo"),
+            element(Kind.METHOD_INVOCATION)
+        ).successors(0));
+    cfgChecker.check(cfg);
+  }
 }

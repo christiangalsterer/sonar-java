@@ -22,16 +22,6 @@ package org.sonar.java.cfg;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import java.io.PrintStream;
-import java.util.ArrayList;
-import java.util.Deque;
-import java.util.HashSet;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import javax.annotation.CheckForNull;
-import javax.annotation.Nullable;
 import org.codehaus.plexus.util.StringOutputStream;
 import org.sonar.java.model.JavaTree;
 import org.sonar.plugins.java.api.semantic.Symbol;
@@ -71,6 +61,17 @@ import org.sonar.plugins.java.api.tree.TypeCastTree;
 import org.sonar.plugins.java.api.tree.UnaryExpressionTree;
 import org.sonar.plugins.java.api.tree.VariableTree;
 import org.sonar.plugins.java.api.tree.WhileStatementTree;
+
+import javax.annotation.CheckForNull;
+import javax.annotation.Nullable;
+import java.io.PrintStream;
+import java.util.ArrayList;
+import java.util.Deque;
+import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 public class CFG {
 
@@ -444,8 +445,6 @@ public class CFG {
       case NEW_ARRAY:
         buildNewArray((NewArrayTree) tree);
         break;
-        // Java 8 constructions : ignored for now.
-      case METHOD_REFERENCE:
         // assert can be ignored by VM so skip them for now.
       case ASSERT_STATEMENT:
         //Ignore assert statement as they are disabled by default in JVM
@@ -456,6 +455,7 @@ public class CFG {
       case ENUM:
       case ANNOTATION_TYPE:
       case INTERFACE:
+      case METHOD_REFERENCE:
       case LAMBDA_EXPRESSION:
         // simple instructions
       case IDENTIFIER:

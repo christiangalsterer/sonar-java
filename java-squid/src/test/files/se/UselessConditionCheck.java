@@ -1,4 +1,4 @@
-public static class Class extends SuperClass {
+/*public static class Class extends SuperClass {
 
   private static class Class {
     Object field;
@@ -1047,8 +1047,34 @@ public static class Class extends SuperClass {
     value = (b1 ^ !b2) ? 1 : 2; // False Negative - Not handled
   }
 
-}
+}*/
 
 class SuperClass {
   boolean field, field1, field2;
+  private static final String ACCEPT_ENCODING = "";
+  private static final String GZIP = "";
+
+  Env env;
+  Request request;
+
+  class Request {
+    String header(String name, String foo) {
+      return null;
+    }
+  }
+  class Env {
+    boolean gzip() {
+      return true;
+    }
+
+    boolean prodMode() {
+      return true;
+    }
+  }
+
+  protected boolean shouldGzip() {
+    return env.gzip()
+        && env.prodMode()
+        && request.header(ACCEPT_ENCODING, "").contains(GZIP);
+  }
 }

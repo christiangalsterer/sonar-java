@@ -108,6 +108,7 @@ public class ExplodedGraphWalker extends BaseTreeVisitor {
   private void execute(MethodTree tree) {
     checkerDispatcher.init();
     CFG cfg = CFG.build(tree);
+    cfg.debugTo(System.out);
     explodedGraph = new ExplodedGraph();
     constraintManager = new ConstraintManager();
     workList = new LinkedList<>();
@@ -212,6 +213,9 @@ public class ExplodedGraphWalker extends BaseTreeVisitor {
 
   private void handleBranch(CFG.Block programPosition, Tree condition, boolean checkPath) {
     Pair<ProgramState, ProgramState> pair = constraintManager.assumeDual(programState);
+    System.out.println(programPosition.id()+" handlebranch from state : "+programState + "  "  + ((JavaTree) condition.parent()).getLine());
+    System.out.println("Generating false : "+pair.a);
+    System.out.println("Generating true : "+pair.b);
     if (pair.a != null) {
       // enqueue false-branch, if feasible
       ProgramState ps = ProgramState.stackValue(pair.a, SymbolicValue.FALSE_LITERAL);
@@ -233,6 +237,7 @@ public class ExplodedGraphWalker extends BaseTreeVisitor {
 
   private void visit(Tree tree, Tree terminator) {
     LOG.debug("visiting node " + tree.kind().name() + " at line " + ((JavaTree) tree).getLine());
+    System.out.println("visiting node " + tree.kind().name() + " at line " + ((JavaTree) tree).getLine()+" "+programState);
     if (!checkerDispatcher.executeCheckPreStatement(tree)) {
       // Some of the check pre statement sink the execution on this node.
       return;
@@ -241,7 +246,8 @@ public class ExplodedGraphWalker extends BaseTreeVisitor {
       case METHOD_INVOCATION:
         MethodInvocationTree mit = (MethodInvocationTree) tree;
         setSymbolicValueOnFields(mit);
-        programState = ProgramState.unstack(programState, mit.arguments().size()).a;
+        //unstack arguments and method identifier
+        programState = ProgramState.unstack(programState, mit.arguments().size() + 1).a;
         logState(mit);
         programState = ProgramState.stackValue(programState, constraintManager.createSymbolicValue(mit));
         break;
@@ -359,6 +365,7 @@ public class ExplodedGraphWalker extends BaseTreeVisitor {
         programState = ProgramState.stackValue(programState, val);
         break;
       case LAMBDA_EXPRESSION:
+      case METHOD_REFERENCE:
         programState = ProgramState.stackValue(programState, constraintManager.createSymbolicValue(tree));
         break;
       default:
