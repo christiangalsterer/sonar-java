@@ -19,13 +19,14 @@
  */
 package org.sonar.java.se;
 
+import org.sonar.java.se.checkers.SEChecker;
 import org.sonar.plugins.java.api.tree.Tree;
 
 public interface CheckerContext {
 
   Object createSink();
 
-  void addIssue(Tree tree, String ruleKey, String message);
+  void addIssue(Tree tree, SEChecker checker, String message);
 
   void addTransition(ProgramState state);
 

@@ -54,7 +54,7 @@ public class NullDereferenceChecker extends SEChecker {
     }
     if (syntaxNode.is(Tree.Kind.MEMBER_SELECT)) {
       if (context.isNull(currentVal)) {
-        context.addIssue(syntaxNode, RULE_KEY, "NullPointerException might be thrown as '" + getName(syntaxNode) + "' is nullable here");
+        context.addIssue(syntaxNode, this, "NullPointerException might be thrown as '" + getName(syntaxNode) + "' is nullable here");
         return null;
       }
       // we dereferenced the symbolic value so we can assume it is not null
@@ -66,7 +66,7 @@ public class NullDereferenceChecker extends SEChecker {
   @Override
   public void checkPostStatement(CheckerContext context, Tree syntaxNode) {
     if (context.isNull(context.getState().peekValue()) && syntaxNode.is(Tree.Kind.SWITCH_STATEMENT)) {
-      context.addIssue(syntaxNode, RULE_KEY, "NullPointerException might be thrown as '" + getName(syntaxNode) + "' is nullable here");
+      context.addIssue(syntaxNode, this, "NullPointerException might be thrown as '" + getName(syntaxNode) + "' is nullable here");
       context.createSink();
       return;
     }

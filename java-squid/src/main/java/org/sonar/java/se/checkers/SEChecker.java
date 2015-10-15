@@ -23,11 +23,8 @@ import org.sonar.api.rule.RuleKey;
 import org.sonar.api.utils.AnnotationUtils;
 import org.sonar.check.Rule;
 import org.sonar.java.se.CheckerContext;
-<<<<<<< HEAD
-import org.sonar.plugins.java.api.JavaCheck;
-=======
 import org.sonar.java.se.ProgramState;
->>>>>>> SONARJAVA-1311 Better handling of checker dispatch
+import org.sonar.plugins.java.api.JavaCheck;
 import org.sonar.plugins.java.api.tree.Tree;
 
 public abstract class SEChecker implements JavaCheck {
