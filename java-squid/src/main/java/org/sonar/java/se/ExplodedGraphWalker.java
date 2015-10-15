@@ -69,7 +69,7 @@ public class ExplodedGraphWalker extends BaseTreeVisitor {
   private static final Logger LOG = LoggerFactory.getLogger(ExplodedGraphWalker.class);
   private static final Set<String> THIS_SUPER = ImmutableSet.of("this", "super");
 
-  private static final boolean DEBUG_MODE_ACTIVATED = true;
+  private static final boolean DEBUG_MODE_ACTIVATED = false;
   private static final int MAX_EXEC_PROGRAM_POINT = 2;
   private final ConditionAlwaysTrueOrFalseChecker alwaysTrueOrFalseChecker;
   private ExplodedGraph explodedGraph;
@@ -356,6 +356,9 @@ public class ExplodedGraphWalker extends BaseTreeVisitor {
       case NULL_LITERAL:
         SymbolicValue val = constraintManager.eval(programState, tree);
         programState = ProgramState.stackValue(programState, val);
+        break;
+      case LAMBDA_EXPRESSION:
+        programState = ProgramState.stackValue(programState, constraintManager.createSymbolicValue(tree));
         break;
       default:
     }
